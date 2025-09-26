@@ -1,6 +1,13 @@
 # MiniOTA
 Online Travel Agency system with hotel search, cart, and bookings (Node.js + MySQL + TripAdvisor API)
 
+[![Node.js](https://img.shields.io/badge/Node.js-18.x-green?logo=node.js)](https://nodejs.org/)  
+[![Express](https://img.shields.io/badge/Express.js-Backend-lightgrey?logo=express)](https://expressjs.com/)  
+[![MySQL](https://img.shields.io/badge/MySQL-Database-blue?logo=mysql)](https://www.mysql.com/)  
+[![TailwindCSS](https://img.shields.io/badge/Tailwind-CSS-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)  
+[![bcrypt](https://img.shields.io/badge/Security-bcrypt-red)](https://www.npmjs.com/package/bcryptjs)  
+[![RapidAPI](https://img.shields.io/badge/API-TripAdvisor-blue?logo=rapidapi)](https://rapidapi.com/)  
+
 
 MiniOTA is a simple **Online Travel Agency system** that allows users to search hotels, add them to a cart, and confirm bookings.  
 It integrates **frontend (HTML, CSS, JS)** with a **Node.js backend, MySQL database**, and **TripAdvisor API**.
