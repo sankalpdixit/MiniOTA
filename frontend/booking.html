@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Bookings - MiniOTA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-50 min-h-screen">
+    <!-- ////////////////////////////////////////////////// -->
+    <!--//navbar-->
+    <nav class="bg-white shadow-md">
+      <div
+        class="container mx-auto px-4 flex justify-between items-center h-16"
+      >
+        <a href="index.html" class="text-2xl font-bold text-blue-600"
+          >MiniOTA</a
+        >
+        <div class="flex items-center space-x-4" id="navbarAuth">
+          <span id="userNameDisplay" class="text-gray-700 font-medium"></span>
+          <a
+            href="cart.html"
+            class="text-gray-700 hover:text-blue-600 font-medium"
+            >Cart</a
+          >
+          <button
+            id="logoutBtn"
+            class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
+          >
+            Logout
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <!--//booking area -->
+    <div class="container mx-auto px-4 py-8">
+      <h1 class="text-3xl font-bold text-gray-800 mb-6">My Bookings</h1>
+      <div id="bookingItems" class="space-y-4"></div>
+      <p id="emptyMessage" class="text-gray-500 text-center mt-8 hidden">
+        You have no bookings yet.
+      </p>
+    </div>
+
+    <script>
+      const API_BASE = "http://localhost:3000";
+
+      //user login check
+      const user = JSON.parse(localStorage.getItem("user"));
+      if (!user) {
+        alert("Please login first.");
+        window.location.href = "login.html";
+      } else {
+        document.getElementById("userNameDisplay").textContent = user.name;
+      }
+
+      //logout
+      document.getElementById("logoutBtn").addEventListener("click", () => {
+        localStorage.removeItem("user");
+        window.location.href = "login.html";
+      });
+
+      //get hotel to bookings
+      async function loadBookings() {
+        try {
+          const res = await fetch(`${API_BASE}/api/booking/${user.id}`);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const data = await res.json();
+
+          const container = document.getElementById("bookingItems");
+          container.innerHTML = "";
+
+          if (!data || data.length === 0) {
+            document.getElementById("emptyMessage").classList.remove("hidden");
+            return;
+          } else {
+            document.getElementById("emptyMessage").classList.add("hidden");
+          }
+
+          data.forEach((item) => {
+            const checkinDate = new Date(item.checkin).toLocaleDateString();
+            const checkoutDate = new Date(item.checkout).toLocaleDateString();
+
+            const div = document.createElement("div");
+            div.className =
+              "mb-4 p-4 border rounded-md flex justify-between items-center flex-wrap md:flex-nowrap";
+
+            div.innerHTML = `
+              <div class="flex-1 mb-2 md:mb-0">
+                <a href="${
+                  item.link
+                }" target="_blank" class="text-blue-600 font-semibold hover:underline">
+                  ${item.hotelname || "Unknown Hotel"}
+                </a>
+                <p class="text-green-600">Price: ₹${item.price}</p>
+                <p>Check-in: ${checkinDate} | Check-out: ${checkoutDate}</p>
+                <p>Guests: ${item.guests || 1}</p>
+              </div>
+              <div>
+                <button class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600" onclick="cancelBooking(${
+                  item.id
+                })">
+                  Cancel Booking
+                </button>
+              </div>
+            `;
+            container.appendChild(div);
+          });
+        } catch (err) {
+          alert("Error fetching bookings: " + err.message);
+        }
+      }
+
+      //cancel booking
+      async function cancelBooking(bookingId) {
+        try {
+          const res = await fetch(`${API_BASE}/api/booking/${bookingId}`, {
+            method: "DELETE",
+          });
+          const data = await res.json();
+
+          if (data.success) {
+            alert("Booking canceled!");
+            loadBookings();
+          } else {
+            alert("Failed to cancel booking: " + (data.message || ""));
+          }
+        } catch (err) {
+          alert("Server error: " + err.message);
+        }
+      }
+
+      loadBookings();
+    </script>
+  </body>
+</html>

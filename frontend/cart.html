@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MiniOTA Cart</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-50 min-h-screen">
+    <!-- ////////////////////////////////////////////////// -->
+    <!--//navbar-->
+    <nav class="bg-white shadow-md">
+      <div
+        class="container mx-auto px-4 flex justify-between items-center h-16"
+      >
+        <a href="index.html" class="text-2xl font-bold text-blue-600"
+          >MiniOTA</a
+        >
+        <div class="flex items-center space-x-4" id="navbarAuth">
+          <span id="userNameDisplay" class="text-gray-700 font-medium"></span>
+          <a
+            href="cart.html"
+            class="text-gray-700 hover:text-blue-600 font-medium"
+            >Cart</a
+          >
+          <button
+            id="logoutBtn"
+            class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
+          >
+            Logout
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <!--//cart area-->
+    <div class="container mx-auto px-4 py-8">
+      <h1 class="text-3xl font-bold text-gray-800 mb-6">Your Cart</h1>
+      <div id="cartItems" class="space-y-4"></div>
+      <p id="emptyMessage" class="text-gray-500 text-center mt-8 hidden">
+        Your cart is empty.
+      </p>
+    </div>
+
+    <script>
+      const API_BASE = "http://localhost:3000";
+
+      let cartItems = [];
+
+      //user login check
+      const user = JSON.parse(localStorage.getItem("user"));
+      if (!user) {
+        alert("Please login first.");
+        window.location.href = "login.html";
+      } else {
+        document.getElementById("userNameDisplay").textContent = user.name;
+      }
+
+      //logout
+      document.getElementById("logoutBtn").addEventListener("click", () => {
+        localStorage.removeItem("user");
+        window.location.href = "login.html";
+      });
+
+      //get hotel to cart
+      async function loadCart() {
+        try {
+          const res = await fetch(`${API_BASE}/api/cart/${user.id}`);
+          const data = await res.json();
+          cartItems = data || [];
+          if (!data || data.length === 0) {
+            document.getElementById("emptyMessage").classList.remove("hidden");
+          } else {
+            document.getElementById("emptyMessage").classList.add("hidden");
+            renderCart(cartItems);
+          }
+        } catch (err) {
+          alert("Error fetching cart: " + err.message);
+        }
+      }
+
+      function renderCart(items) {
+        const container = document.getElementById("cartItems");
+        container.innerHTML = "";
+
+        items.forEach((item) => {
+          const div = document.createElement("div");
+          div.className =
+            "mb-4 p-4 border rounded-md flex justify-between items-center flex-wrap md:flex-nowrap";
+
+          const checkinDate = new Date(item.checkin).toLocaleDateString();
+          const checkoutDate = new Date(item.checkout).toLocaleDateString();
+
+          div.innerHTML = `
+            <div class="flex-1 mb-2 md:mb-0">
+              <a href="${
+                item.link
+              }" target="_blank" class="text-blue-600 font-semibold hover:underline">
+                ${item.hotelName || "Unknown Hotel"}
+              </a>
+              <p class="text-green-600">Price: ₹${item.price}</p>
+              <p>Check-in: ${checkinDate} | Check-out: ${checkoutDate}</p>
+            </div>
+            <div class="flex items-center space-x-2">
+              <label for="guests-${
+                item.id
+              }" class="text-gray-700">Guests:</label>
+              <input type="number" min="1" value="${
+                item.guests || 1
+              }" id="guests-${item.id}" class="border px-2 py-1 rounded w-16"/>
+              <button class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700" onclick="confirmBooking(${
+                item.id
+              })">Confirm</button>
+              <button class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600" onclick="removeFromCart(${
+                item.id
+              })">Remove</button>
+            </div>
+          `;
+          container.appendChild(div);
+        });
+      }
+
+      //booking confirm
+      async function confirmBooking(cartId) {
+        const guests =
+          parseInt(document.getElementById(`guests-${cartId}`).value) || 1;
+        const item = cartItems.find((c) => c.id === cartId);
+        if (!item) return alert("Item not found in cart");
+
+        try {
+          const res = await fetch(`${API_BASE}/api/booking`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              cartId,
+              userId: user.id,
+              hotelName: item.hotelName,
+              price: item.price,
+              link: item.link,
+              checkin: item.checkin,
+              checkout: item.checkout,
+              guests,
+            }),
+          });
+          const data = await res.json();
+          if (data.success) {
+            alert("Booking confirmed!");
+            loadCart();
+          } else {
+            alert("Booking failed: " + (data.message || ""));
+          }
+        } catch (err) {
+          alert("Server error: " + err.message);
+        }
+      }
+
+      //delete from cart
+      async function removeFromCart(cartId) {
+        try {
+          const res = await fetch(`${API_BASE}/api/cart/${cartId}`, {
+            method: "DELETE",
+          });
+          const data = await res.json();
+          if (data.success) {
+            alert("Item removed from cart");
+            loadCart();
+          } else {
+            alert("Failed to remove item");
+          }
+        } catch (err) {
+          alert("Server error: " + err.message);
+        }
+      }
+
+      loadCart();
+    </script>
+  </body>
+</html>
